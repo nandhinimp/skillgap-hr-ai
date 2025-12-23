@@ -42,7 +42,11 @@ ${jobDescription}
     console.log(completion.choices[0].message.content);
 
   } catch (error) {
-    console.error("❌ Error:", error.message);
+    console.error("❌ ANALYZE ERROR:", error);
+    res.status(500).json({
+      error: "Analysis failed",
+      message: error.message
+    });
   }
 }
 

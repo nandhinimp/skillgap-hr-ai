@@ -53,9 +53,16 @@ ${jobDescription}
 
     fs.unlinkSync(req.file.path); // delete uploaded PDF
 
-    res.json({
-      analysis: completion.choices[0].message.content,
-    });
+    const analysisText = completion.choices[0].message.content;
+    let analysisJSON;
+
+    try {
+      analysisJSON = JSON.parse(analysisText);
+    } catch {
+      analysisJSON = { rawOutput: analysisText };
+    }
+
+    res.json({ analysis: analysisJSON });
   } catch (err) {
     console.error(err.message);
     res.status(500).json({ error: "Analysis failed" });
