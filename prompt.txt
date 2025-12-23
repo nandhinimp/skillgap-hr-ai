@@ -26,3 +26,7 @@ Output format:
   },
   "overallFeedback": ""
 }
+IMPORTANT:
+- Respond with ONLY valid JSON
+- Do NOT include ```json or ``` or explanations
+- Output must be machine-parseable
