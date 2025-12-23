@@ -1,39 +1,35 @@
-require("dotenv").config();
-const fs = require("fs");
-const Groq = require("groq-sdk");
-
-const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
-});
-
-const systemPrompt = fs.readFileSync("prompt-interview.txt", "utf8");
-
-async function generateQuestions() {
+app.post("/interview", async (req, res) => {
   try {
-    console.log("🧠 Generating interview questions...");
+    const { missingSkills } = req.body;
+
+    if (!missingSkills || !Array.isArray(missingSkills)) {
+      return res.status(400).json({ error: "missingSkills array required" });
+    }
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: interviewPrompt },
         {
           role: "user",
-          content: `
-Missing Skills:
-- JWT authentication
-- REST API security
-`
+          content: `Missing Skills:\n${missingSkills.map(s => `- ${s}`).join("\n")}`
         }
       ],
       temperature: 0.3,
     });
 
-    console.log("✅ Interview Questions:");
-    console.log(completion.choices[0].message.content);
+    const rawText = completion.choices[0].message.content;
 
-  } catch (error) {
-    console.error("❌ Error:", error.message);
+    const parsedJSON = extractJSON(rawText);
+
+    if (!parsedJSON) {
+      return res.json({ rawOutput: rawText });
+    }
+
+    res.json(parsedJSON);
+
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).json({ error: "Interview generation failed" });
   }
-}
-
-generateQuestions();
+});
