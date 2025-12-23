@@ -25,3 +25,6 @@ Return JSON strictly in this format:
     }
   ]
 }
+Generate 2 questions per missing skill.
+Total questions should be between 3 and 5.
+Return JSON only.
