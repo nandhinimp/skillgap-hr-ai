@@ -34,7 +34,8 @@ REST API security, and leadership experience.
       temperature: 0.2,
     });
 
-    console.log("✅ AI Response:");
+    console.log("✅ Resume Analysis Result (with section critique):");
+
     console.log(completion.choices[0].message.content);
 
   } catch (error) {
