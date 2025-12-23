@@ -19,6 +19,7 @@ const groq = new Groq({
 // ===== PROMPTS =====
 const resumePrompt = fs.readFileSync("prompt.txt", "utf8");
 const interviewPrompt = fs.readFileSync("prompt-interview.txt", "utf8");
+const evaluationPrompt = fs.readFileSync("prompt-evaluation.txt", "utf8");
 
 // =====================================================
 // ✅ STEP 1: RESUME ANALYSIS API
@@ -116,6 +117,61 @@ app.post("/interview", async (req, res) => {
   } catch (error) {
     console.error("❌ INTERVIEW ERROR:", error.message);
     res.status(500).json({ error: "Interview generation failed" });
+  }
+});
+
+// =====================================================
+// ✅ STEP 3: ANSWER EVALUATION API
+// =====================================================
+app.post("/evaluate-answer", async (req, res) => {
+  try {
+    const { question, answer } = req.body;
+
+    if (!question || !answer) {
+      return res.status(400).json({ error: "Question and answer required" });
+    }
+
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: evaluationPrompt },
+        {
+          role: "user",
+          content: `
+Question:
+${question}
+
+Candidate Answer:
+${answer}
+`
+        }
+      ],
+      temperature: 0.2,
+    });
+
+    const aiText = completion.choices[0].message.content;
+
+    // Remove ```json and ``` wrappers
+    const cleanedText = aiText
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    let parsedJSON;
+
+    try {
+      parsedJSON = JSON.parse(cleanedText);
+    } catch (err) {
+      return res.status(500).json({
+        error: "Invalid AI JSON output",
+        rawOutput: aiText
+      });
+    }
+
+    res.json(parsedJSON);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Evaluation failed" });
   }
 });
 
