@@ -8,6 +8,9 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState("");
+  const [questions, setQuestions] = useState<Array<{ skill: string; question: string }>>([]);
+  const [answers, setAnswers] = useState<string[]>([]);
+  const [feedback, setFeedback] = useState<any[]>([]);
 
   const handleSubmit = async () => {
     if (!resume || !jobDescription) {
@@ -74,25 +77,113 @@ export default function Home() {
       {error && <p style={{ color: "red" }}>{error}</p>}
 
       {result && (
-        <div style={{ marginTop: 40 }}>
+        <div style={{ marginTop: "20px" }}>
           <h2>Analysis Result</h2>
-          {result.rawOutput ? (
-            <pre style={{ whiteSpace: "pre-wrap" }}>{result.rawOutput}</pre>
-          ) : (
-            <>
-              <p><b>Match Score:</b> {result.matchScore}%</p>
 
-              <h3>Missing Skills</h3>
+          {/* Match Score */}
+          <p><strong>Match Score:</strong> {result.matchScore}%</p>
+
+          {/* Missing Skills */}
+          <div style={{ marginTop: "10px" }}>
+            <strong>Missing Skills:</strong>
+            {result.missingSkills && result.missingSkills.length > 0 ? (
               <ul>
-                {result.missingSkills?.map((skill: string, i: number) => (
-                  <li key={i}>{skill}</li>
+                {result.missingSkills.map((skill: string, index: number) => (
+                  <li key={index}>{skill}</li>
                 ))}
               </ul>
+            ) : (
+              <p>None 🎉</p>
+            )}
+          </div>
 
-              <h3>Overall Feedback</h3>
-              <p>{result.overallFeedback}</p>
-            </>
+          {/* Overall Feedback */}
+          <div style={{ marginTop: "10px" }}>
+            <strong>Overall Feedback:</strong>
+            <p>{result.overallFeedback}</p>
+          </div>
+
+          {/* Practice CTA */}
+          {result.missingSkills?.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              <button
+                onClick={async () => {
+                  try {
+                    setLoading(true);
+                    const res = await fetch("http://localhost:5000/interview", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ missingSkills: result.missingSkills }),
+                    });
+                    const data = await res.json();
+                    const qs = data.questions || [];
+                    setQuestions(qs);
+                    setAnswers(new Array(qs.length).fill(""));
+                    setFeedback([]);
+                  } catch (e) {
+                    console.error(e);
+                    setError("Failed to generate interview questions");
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                disabled={loading}
+              >
+                {loading ? "Preparing questions..." : "Practice for this Role"}
+              </button>
+            </div>
           )}
+        </div>
+      )}
+
+      {/* Questions + Answers */}
+      {questions.length > 0 && (
+        <div style={{ marginTop: 32 }}>
+          <h2>Mock Interview</h2>
+          {questions.map((q, i) => (
+            <div key={i} style={{ marginBottom: 20 }}>
+              <p style={{ margin: 0 }}><strong>{q.skill}</strong></p>
+              <p style={{ marginTop: 4 }}>{q.question}</p>
+              <textarea
+                rows={4}
+                style={{ width: "100%" }}
+                value={answers[i] || ""}
+                onChange={(e) => {
+                  const next = answers.slice();
+                  next[i] = e.target.value;
+                  setAnswers(next);
+                }}
+                placeholder="Answer using STAR: Situation, Task, Action, Result"
+              />
+              <div style={{ marginTop: 8 }}>
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch("http://localhost:5000/evaluate-answer", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ question: q.question, answer: answers[i] || "" }),
+                      });
+                      const data = await res.json();
+                      const next = feedback.slice();
+                      next[i] = data;
+                      setFeedback(next);
+                    } catch (e) {
+                      console.error(e);
+                      setError("Failed to evaluate answer");
+                    }
+                  }}
+                >
+                  Get Feedback
+                </button>
+              </div>
+              {feedback[i] && (
+                <pre style={{ whiteSpace: "pre-wrap", background: "#f8f8f8", padding: 8 }}>
+                  {JSON.stringify(feedback[i], null, 2)}
+                </pre>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </main>

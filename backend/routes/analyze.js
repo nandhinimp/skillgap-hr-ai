@@ -10,9 +10,7 @@ router.post("/", upload.single("resume"), async (req, res) => {
     const jobDescription = req.body.jobDescription;
 
     if (!req.file || !jobDescription) {
-      return res.status(400).json({
-        error: "Resume and job description are required",
-      });
+      return res.status(400).json({ error: "Resume and job description are required" });
     }
 
     const analysis = await analyzeResume(req.file.path, jobDescription);

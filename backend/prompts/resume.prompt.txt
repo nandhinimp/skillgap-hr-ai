@@ -43,3 +43,5 @@ OUTPUT FORMAT (STRICT JSON):
   },
   "finalVerdict": "Direct statement on whether the candidate should apply now or skill up first"
 }
+Be strict. Assume the candidate is competing for a top-tier role.
+Explicitly state employability risk and readiness level.
