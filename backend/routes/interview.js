@@ -1,12 +1,20 @@
 const express = require("express");
-const { generateInterviewQuestions } = require("../Services/interviewService");
+const { generateInterviewQuestions } = require("../services/interviewService");
 
 const router = express.Router();
 
 router.post("/", async (req, res) => {
   try {
-    const { missingSkills } = req.body || {};
-    if (!Array.isArray(missingSkills)) {
+    let { missingSkills } = req.body || {};
+    // Accept string payloads and coerce to array to avoid 400s from minor client mistakes.
+    if (typeof missingSkills === "string") {
+      missingSkills = missingSkills
+        .split(/\r?\n|,/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+    }
+
+    if (!Array.isArray(missingSkills) || missingSkills.length === 0) {
       return res.status(400).json({ error: "missingSkills array is required" });
     }
 

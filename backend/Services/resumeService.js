@@ -35,37 +35,25 @@ ${jobDescription}
   fs.unlinkSync(pdfPath);
 
   const text = completion.choices[0].message.content;
-
-  // 🔐 try to coerce into valid JSON and fall back gracefully
   const cleaned = text.replace(/```json|```/g, "").trim();
+
   try {
     const ai = JSON.parse(cleaned);
 
-    // ✅ Normalize to frontend schema
     const critical = Array.isArray(ai.criticalSkillGaps) ? ai.criticalSkillGaps : [];
     const important = Array.isArray(ai.importantSkillGaps) ? ai.importantSkillGaps : [];
     const reportedMissing = Array.isArray(ai.missingSkills) ? ai.missingSkills : [];
 
-    const missingSkills = Array.from(new Set([...
-      reportedMissing,
-      ...critical,
-      ...important
-    ].flat().filter(Boolean)));
+    const missingSkills = Array.from(new Set([...reportedMissing, ...critical, ...important].flat().filter(Boolean)));
 
-    const parts = [
-      ai.selectionLikelihood?.reason,
-      ai.resumeVsJDAnalysis,
-      ai.finalVerdict
-    ].filter(Boolean);
-
-    const overallFeedback = ai.overallFeedback || parts.join(" \u2014 ");
+    const parts = [ai.selectionLikelihood?.reason, ai.resumeVsJDAnalysis, ai.finalVerdict].filter(Boolean);
+    const overallFeedback = ai.overallFeedback || parts.join(" — ");
 
     return {
       matchScore: ai.matchScore ?? ai.score ?? 0,
       missingSkills,
       overallFeedback,
-      // keep the full object for future use/debugging
-      _raw: ai
+      _raw: ai,
     };
   } catch (err) {
     console.error("⚠️ Failed to parse AI JSON:", err.message);

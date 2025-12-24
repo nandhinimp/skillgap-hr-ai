@@ -173,14 +173,38 @@ export default function Home() {
                       setError("Failed to evaluate answer");
                     }
                   }}
+                  disabled={!answers[i]?.trim()}
                 >
                   Get Feedback
                 </button>
               </div>
               {feedback[i] && (
-                <pre style={{ whiteSpace: "pre-wrap", background: "#f8f8f8", padding: 8 }}>
-                  {JSON.stringify(feedback[i], null, 2)}
-                </pre>
+                <div style={{ marginTop: 12, background: "#f9fafb", padding: 12, borderRadius: 6 }}>
+                  <h4>STAR Analysis</h4>
+                  <ul>
+                    <li><b>Situation:</b> {feedback[i].starAnalysis?.situation}</li>
+                    <li><b>Task:</b> {feedback[i].starAnalysis?.task}</li>
+                    <li><b>Action:</b> {feedback[i].starAnalysis?.action}</li>
+                    <li><b>Result:</b> {feedback[i].starAnalysis?.result}</li>
+                  </ul>
+
+                  <h4>Strengths</h4>
+                  <ul>
+                    {feedback[i].feedback?.strengths?.map((s: string, idx: number) => (
+                      <li key={idx}>{s}</li>
+                    ))}
+                  </ul>
+
+                  <h4>Weaknesses</h4>
+                  <ul>
+                    {feedback[i].feedback?.weaknesses?.map((w: string, idx: number) => (
+                      <li key={idx}>{w}</li>
+                    ))}
+                  </ul>
+
+                  <h4>Improved Answer</h4>
+                  <p>{feedback[i].improvedAnswer}</p>
+                </div>
               )}
             </div>
           ))}
