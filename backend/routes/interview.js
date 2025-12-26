@@ -1,5 +1,5 @@
 const express = require("express");
-const { generateInterviewQuestions } = require("./services/interviewService");
+const { generateInterviewQuestions } = require("../Services/interviewService");
 
 const router = express.Router();
 
