@@ -5,7 +5,7 @@ const router = express.Router();
 
 router.post("/", async (req, res) => {
   try {
-    let { missingSkills } = req.body || {};
+    let { missingSkills, resumeText, jdText } = req.body || {};
     // Accept string payloads and coerce to array to avoid 400s from minor client mistakes.
     if (typeof missingSkills === "string") {
       missingSkills = missingSkills
@@ -18,7 +18,11 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ error: "missingSkills array is required" });
     }
 
-    const questions = await generateInterviewQuestions(missingSkills);
+    const questions = await generateInterviewQuestions(
+      missingSkills,
+      resumeText || "",
+      jdText || ""
+    );
     res.json(questions);
   } catch (err) {
     console.error("Interview error:", err);
