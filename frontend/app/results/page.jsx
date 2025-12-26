@@ -50,11 +50,21 @@ export default function AnalysisResults() {
 
   // Extract detailed data from _raw if available
   const raw = result._raw || {};
-  const redFlags = raw.redFlags || [];
-  const strengths = raw.strengths || [];
-  const criticalGaps = raw.criticalSkillGaps || [];
-  const selectionLikelihood = raw.selectionLikelihood || {};
-  const experienceAnalysis = raw.experienceAnalysis || {};
+  const redFlags = Array.isArray(raw.redFlags) 
+    ? raw.redFlags.filter(f => f && typeof f === 'object') 
+    : [];
+  const strengths = Array.isArray(raw.strengths) 
+    ? raw.strengths.filter(s => s && typeof s === 'object') 
+    : [];
+  const criticalGaps = Array.isArray(raw.criticalSkillGaps) 
+    ? raw.criticalSkillGaps.filter(g => g && typeof g === 'object') 
+    : [];
+  const selectionLikelihood = (raw.selectionLikelihood && typeof raw.selectionLikelihood === 'object') 
+    ? raw.selectionLikelihood 
+    : {};
+  const experienceAnalysis = (raw.experienceAnalysis && typeof raw.experienceAnalysis === 'object') 
+    ? raw.experienceAnalysis 
+    : {};
 
   const getScoreColor = (score) => {
     if (score >= 85) return "#10b981";
@@ -309,23 +319,27 @@ export default function AnalysisResults() {
           </h3>
           {result.missingSkills && result.missingSkills.length > 0 ? (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-              {result.missingSkills.map((skill, index) => (
-                <span
-                  key={index}
-                  style={{
-                    padding: "8px 14px",
-                    background: "#fef08a",
-                    color: "#92400e",
-                    borderRadius: 6,
-                    fontSize: 14,
-                    fontWeight: 500,
-                    border: "1px solid #fcd34d",
-                    animation: `fadeIn 0.3s ease-in ${index * 0.05}s both`
-                  }}
-                >
-                  {skill}
-                </span>
-              ))}
+              {result.missingSkills.map((skill, index) => {
+                // Handle both string and object skills
+                const skillText = typeof skill === 'string' ? skill : (skill?.skill || skill?.name || JSON.stringify(skill));
+                return (
+                  <span
+                    key={index}
+                    style={{
+                      padding: "8px 14px",
+                      background: "#fef08a",
+                      color: "#92400e",
+                      borderRadius: 6,
+                      fontSize: 14,
+                      fontWeight: 500,
+                      border: "1px solid #fcd34d",
+                      animation: `fadeIn 0.3s ease-in ${index * 0.05}s both`
+                    }}
+                  >
+                    {skillText}
+                  </span>
+                );
+              })}
               <style jsx>{`
                 @keyframes fadeIn {
                   from {
