@@ -37,7 +37,7 @@ export default function ResumeAnalyzer() {
     }
 
     try {
-      const response = await fetch("http://localhost:5000/analyze", {
+      const response = await fetch("https://skillgap-hr-ai-3.onrender.com/analyze", {
         method: "POST",
         body: formData,
       });

@@ -36,7 +36,7 @@ export default function MockInterview() {
       const resumeText = analysisResult.resumeText || "";
       const jdText = analysisResult.jobDescription || "";
 
-      const res = await fetch("http://localhost:5000/interview", {
+      const res = await fetch("https://skillgap-hr-ai-3.onrender.com/interview", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -60,7 +60,7 @@ export default function MockInterview() {
 
   const evaluateAnswer = async (index) => {
     try {
-      const res = await fetch("http://localhost:5000/evaluate-answer", {
+      const res = await fetch("https://skillgap-hr-ai-3.onrender.com/evaluate-answer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
