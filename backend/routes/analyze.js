@@ -1,8 +1,8 @@
 const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
-const { analyzeResume } = require("../services/resumeAnalyzer");
-const { extractJDText } = require("../services/jdExtractor");
+const { analyzeResume } = require("../Services/resumeAnalyzer");
+const { extractJDText } = require("../Services/jdExtractor");
 
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
