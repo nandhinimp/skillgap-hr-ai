@@ -13,63 +13,108 @@ const systemPrompt = fs.readFileSync(promptPath, "utf8");
 async function analyzeResume(pdfPath, jobDescription) {
   const pdfBuffer = fs.readFileSync(pdfPath);
   const pdfData = await pdfParse(pdfBuffer);
+  const resumeText = (pdfData.text || "").trim();
 
-  const completion = await groq.chat.completions.create({
-    model: "llama-3.1-8b-instant",
-    messages: [
-      { role: "system", content: systemPrompt },
-      {
-        role: "user",
-        content: `
-Resume:
-${pdfData.text}
+  if (resumeText.length < 50) {
+    throw new Error("Resume text is empty or unreadable. Please upload a searchable PDF.");
+  }
 
-Job Description:
+  let completion;
+  try {
+    completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: `
+=== RESUME TO ANALYZE ===
+${resumeText}
+
+=== JOB DESCRIPTION REQUIREMENTS ===
 ${jobDescription}
-        `,
-      },
-    ],
-    temperature: 0.2,
-  });
 
-  fs.unlinkSync(pdfPath);
+CRITICAL INSTRUCTIONS: 
+- Apply ULTRA-STRICT evaluation standards
+- Start match score at 0, add points ONLY when proven with evidence
+- Deduct points for missing critical skills (-15 each)
+- Flag ALL red flags: keyword stuffing, vague claims, missing metrics, outdated skills
+- Be BRUTALLY HONEST in feedback - candidates need truth
+- Use weighted scoring algorithm precisely
+- If missing 2+ critical skills, score MUST be <60%
+- Most resumes are 60-75% matches, NOT 85%+
+- Provide specific evidence for every claim
+          `,
+        },
+      ],
+      temperature: 0.05,
+      top_p: 0.85,
+      max_tokens: 4096,
+    });
+  } finally {
+    // Clean up file safely even if upstream fails
+    try {
+      if (fs.existsSync(pdfPath)) {
+        fs.unlinkSync(pdfPath);
+      }
+    } catch (e) {
+      console.warn("Failed to delete resume file:", pdfPath, e.message);
+    }
+  }
 
   const text = completion.choices[0].message.content;
 
-  // 🔐 try to coerce into valid JSON and fall back gracefully
-  const cleaned = text.replace(/```json|```/g, "").trim();
+  // Robust JSON extraction and parsing
+  const cleaned = text
+    .replace(/```json|\```/g, "")
+    .replace(/^[^{]*/, "") // Remove text before first {
+    .replace(/[^}]*$/, "") // Remove text after last }
+    .trim();
+
   try {
     const ai = JSON.parse(cleaned);
 
-    // ✅ Normalize to frontend schema
-    const critical = Array.isArray(ai.criticalSkillGaps) ? ai.criticalSkillGaps : [];
-    const important = Array.isArray(ai.importantSkillGaps) ? ai.importantSkillGaps : [];
-    const reportedMissing = Array.isArray(ai.missingSkills) ? ai.missingSkills : [];
+    // Validate and normalize all fields with strict type checking
+    const critical = Array.isArray(ai.criticalSkillGaps) ? ai.criticalSkillGaps.filter(s => s) : [];
+    const important = Array.isArray(ai.importantSkillGaps) ? ai.importantSkillGaps.filter(s => s) : [];
+    const reported = Array.isArray(ai.missingSkills) ? ai.missingSkills.filter(s => s) : [];
 
-    const missingSkills = Array.from(new Set([...
-      reportedMissing,
-      ...critical,
-      ...important
-    ].flat().filter(Boolean)));
+    const missingSkills = Array.from(new Set([...reported, ...critical, ...important].flat().filter(Boolean)));
 
+    // Score validation
+    let score = Number(ai.matchScore) || Number(ai.score) || 0;
+    if (score < 0) score = 0;
+    if (score > 100) score = 100;
+
+    // Combine all feedback sources
     const parts = [
       ai.selectionLikelihood?.reason,
       ai.resumeVsJDAnalysis,
+      ai.overallFeedback,
       ai.finalVerdict
     ].filter(Boolean);
 
-    const overallFeedback = ai.overallFeedback || parts.join(" \u2014 ");
+    const overallFeedback = parts.join(" — ") || "Analysis complete.";
 
     return {
-      matchScore: ai.matchScore ?? ai.score ?? 0,
+      matchScore: score,
       missingSkills,
       overallFeedback,
-      // keep the full object for future use/debugging
+      resumeText,
+      jobDescription,
       _raw: ai
     };
   } catch (err) {
     console.error("⚠️ Failed to parse AI JSON:", err.message);
-    return { rawOutput: text, error: "Invalid AI JSON output" };
+    // Return fallback structure on parse error
+    return {
+      matchScore: 0,
+      missingSkills: [],
+      overallFeedback: "Unable to parse AI response. Please try again.",
+      resumeText: "",
+      jobDescription: "",
+      _raw: { rawOutput: text, parseError: err.message }
+    };
   }
 }
 
