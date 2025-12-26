@@ -1,7 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const fs = require("fs");
-const { analyzeResume } = require("./services/resumeAnalyzer");
+const { analyzeResume } = require("../services/resumeAnalyzer");
 const { extractJDText } = require("../services/jdExtractor");
 
 const router = express.Router();
